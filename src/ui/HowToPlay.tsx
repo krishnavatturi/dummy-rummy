@@ -23,6 +23,10 @@ export function HowToPlay({ onClose }: Props) {
             </li>
             <li>On your turn pick one card from the closed deck or the open pile, then discard one.</li>
             <li>
+              For a live opponent, create an Online adda room in the lobby and share the
+              4-letter code. Empty seats can still be filled with bots.
+            </li>
+            <li>
               Declare when your 13 cards are all grouped into valid sequences and
               sets, including <b>at least two sequences</b>, one of which must be a{" "}
               <b>pure sequence</b> (no jokers).

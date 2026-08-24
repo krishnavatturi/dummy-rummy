@@ -11,7 +11,10 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL (default `http://localhost:5173`). Enter a table name, sit at a points/pool/deals table, and bots fill the empty seats.
+Open `http://localhost:5173`. Enter a table name, then either:
+
+- **Vs bots** — sit at any Points / Pool / Deals table
+- **Online** — Create room, share the 4-letter code, open a second browser, Join table, host deals (empty seats can be filled with bots)
 
 ## Rules in this build
 
@@ -24,12 +27,12 @@ Open the printed local URL (default `http://localhost:5173`). Enter a table name
 
 ## Scripts
 
-| Command        | What it does              |
-| -------------- | ------------------------- |
-| `npm run dev`  | Vite dev server           |
-| `npm test`     | Vitest (melds + engine)   |
-| `npm run build`| Production bundle         |
+| Command        | What it does                         |
+| -------------- | ------------------------------------ |
+| `npm run dev`  | Vite + realtime WebSocket server     |
+| `npm test`     | Vitest (melds, engine, net snapshots)|
+| `npm run build`| Production bundle                    |
 
 ## Stack
 
-Vite, React 19, TypeScript. Game rules live in `src/game` and are covered by unit tests so the table UI stays honest.
+Vite, React 19, TypeScript, `ws` room server. Game rules live in `src/game` and are covered by unit tests so the table UI stays honest.
