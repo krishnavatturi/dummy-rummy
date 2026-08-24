@@ -26,6 +26,11 @@ export function advertisedPort(hostHeader: string | undefined, fallback: number)
   return fallback;
 }
 
+export function requestHost(host?: string, forwardedHost?: string): string | undefined {
+  if (forwardedHost) return forwardedHost.split(",")[0]!.trim();
+  return host;
+}
+
 /** Prefer a tunnel URL, then the page origin if it is reachable, then a LAN address. */
 export function bestInviteOrigin(pageOrigin: string, info: HostInfo | null): string {
   if (info?.publicOrigin) return info.publicOrigin.replace(/\/$/, "");

@@ -5,6 +5,7 @@ import {
   inviteHint,
   isLoopbackOrigin,
   makeInviteLink,
+  requestHost,
 } from "./invite";
 
 describe("invite links", () => {
@@ -37,6 +38,8 @@ describe("invite links", () => {
     expect(advertisedPort("localhost:5173", 8787)).toBe(5173);
     expect(advertisedPort("192.168.1.8:4173", 8787)).toBe(4173);
     expect(advertisedPort("abc.trycloudflare.com", 4173)).toBe(4173);
+    expect(requestHost("127.0.0.1:8787", "localhost:5173")).toBe("localhost:5173");
+    expect(advertisedPort(requestHost("127.0.0.1:8787", "localhost:5173"), 8787)).toBe(5173);
   });
 
   it("explains local vs public invites", () => {

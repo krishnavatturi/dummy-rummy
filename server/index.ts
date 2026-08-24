@@ -9,7 +9,7 @@ import { applyAction, type GameAction } from "../src/game/actions";
 import { takeBotTurn } from "../src/game/bots";
 import { createMatch, currentSeat, discard, drawClosed, getSeatCards } from "../src/game/engine";
 import { viewFor } from "../src/game/net";
-import { advertisedPort } from "../src/net/invite";
+import { advertisedPort, requestHost } from "../src/net/invite";
 import type { GameState, TableConfig, TableSeat } from "../src/game/types";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -188,6 +188,11 @@ function leaveRoom(ws: WebSocket) {
   broadcast(room);
 }
 
+function headerString(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
 function sendJson(res: import("node:http").ServerResponse, status: number, body: unknown) {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -220,7 +225,7 @@ function serveStatic(reqPath: string, res: import("node:http").ServerResponse): 
 const httpServer = createServer((req, res) => {
   const url = req.url ?? "/";
   if (url.startsWith("/api/info")) {
-    const port = advertisedPort(req.headers.host, PORT);
+    const port = advertisedPort(requestHost(req.headers.host, headerString(req.headers["x-forwarded-host"])), PORT);
     sendJson(res, 200, {
       publicOrigin: publicOrigin(),
       lanOrigins: lanOrigins(port),
