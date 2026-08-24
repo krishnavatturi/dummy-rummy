@@ -14,7 +14,30 @@ npm run dev
 Open `http://localhost:5173`. Enter a table name, then either:
 
 - **Vs bots** — sit at any Points / Pool / Deals table
-- **Online** — Create room, share the 4-letter code, open a second browser, Join table, host deals (empty seats can be filled with bots)
+- **Online** — Create room, copy the invite link from the waiting room, host deals (empty seats can be filled with bots)
+
+## Play with friends (no git needed)
+
+Friends only need the invite URL in a browser. They never clone this repo.
+
+On the host machine:
+
+```bash
+npm install
+npm run share
+```
+
+That builds the app, serves UI + realtime on one port, and opens a public tunnel. The waiting room then shows a **Copy link** button (`/?room=CODE`). Send that URL. Friends enter a name and sit.
+
+Same Wi-Fi without a tunnel: `npm run dev` (or `npm start` after a build) and copy the LAN link from the waiting room.
+
+| Command         | What it does                                      |
+| --------------- | ------------------------------------------------- |
+| `npm run share` | Production build + public tunnel (friends join)   |
+| `npm run share:dev` | Tunnel the Vite dev server (`localhost:5173`) |
+| `npm start`     | Serve the built app + WebSocket on port 8787      |
+
+Set `PUBLIC_URL` if you already have a public origin (skip the tunnel). Practice chips only.
 
 ## Rules in this build
 
@@ -30,7 +53,7 @@ Open `http://localhost:5173`. Enter a table name, then either:
 | Command        | What it does                         |
 | -------------- | ------------------------------------ |
 | `npm run dev`  | Vite + realtime WebSocket server     |
-| `npm test`     | Vitest (melds, engine, net snapshots)|
+| `npm test`     | Vitest (melds, engine, net, invites) |
 | `npm run build`| Production bundle                    |
 
 ## Stack

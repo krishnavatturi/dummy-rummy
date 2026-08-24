@@ -1,13 +1,33 @@
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
+import { createServer } from "node:http";
+import { networkInterfaces } from "node:os";
+import { extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
+import { WebSocketServer, WebSocket } from "ws";
 import { BOT_NAMES, LOBBY_TABLES } from "../src/game/lobby";
 import { applyAction, type GameAction } from "../src/game/actions";
 import { takeBotTurn } from "../src/game/bots";
 import { createMatch, currentSeat, discard, drawClosed, getSeatCards } from "../src/game/engine";
 import { viewFor } from "../src/game/net";
+import { advertisedPort } from "../src/net/invite";
 import type { GameState, TableConfig, TableSeat } from "../src/game/types";
-import { WebSocketServer, WebSocket } from "ws";
-import { createServer } from "node:http";
 
 const PORT = Number(process.env.PORT ?? 8787);
+const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
+const DIST = join(ROOT, "dist");
+const SHARE_FILE = join(ROOT, ".share-url");
+
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+  ".map": "application/json",
+};
 
 type ClientMsg =
   | { t: "hello"; name: string }
@@ -50,6 +70,27 @@ function roomCode(): string {
   let code = "";
   for (let i = 0; i < 4; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
   return rooms.has(code) ? roomCode() : code;
+}
+
+function lanOrigins(port: number): string[] {
+  const urls: string[] = [];
+  for (const addrs of Object.values(networkInterfaces())) {
+    for (const a of addrs ?? []) {
+      const v4 = a.family === "IPv4" || a.family === 4;
+      if (v4 && !a.internal) urls.push(`http://${a.address}:${port}`);
+    }
+  }
+  return urls;
+}
+
+function publicOrigin(): string | null {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/$/, "");
+  try {
+    const raw = readFileSync(SHARE_FILE, "utf8").trim();
+    return raw ? raw.replace(/\/$/, "") : null;
+  } catch {
+    return null;
+  }
 }
 
 function roomView(room: Room, youId: string) {
@@ -147,12 +188,61 @@ function leaveRoom(ws: WebSocket) {
   broadcast(room);
 }
 
-const httpServer = createServer((_req, res) => {
-  res.writeHead(200, { "content-type": "text/plain" });
+function sendJson(res: import("node:http").ServerResponse, status: number, body: unknown) {
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "access-control-allow-origin": "*",
+  });
+  res.end(JSON.stringify(body));
+}
+
+function serveStatic(reqPath: string, res: import("node:http").ServerResponse): boolean {
+  if (!existsSync(DIST)) return false;
+  const raw = decodeURIComponent((reqPath.split("?")[0] || "/")).replace(/\\/g, "/");
+  const rel = raw === "/" ? "/index.html" : raw;
+  const full = normalize(join(DIST, rel));
+  const distRoot = DIST.endsWith("/") ? DIST : `${DIST}/`;
+  if (full !== DIST && !full.startsWith(distRoot)) {
+    res.writeHead(403);
+    res.end("forbidden");
+    return true;
+  }
+  let file = full;
+  if (!existsSync(file) || statSync(file).isDirectory()) {
+    file = join(DIST, "index.html");
+  }
+  if (!existsSync(file)) return false;
+  res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream" });
+  createReadStream(file).pipe(res);
+  return true;
+}
+
+const httpServer = createServer((req, res) => {
+  const url = req.url ?? "/";
+  if (url.startsWith("/api/info")) {
+    const port = advertisedPort(req.headers.host, PORT);
+    sendJson(res, 200, {
+      publicOrigin: publicOrigin(),
+      lanOrigins: lanOrigins(port),
+      port,
+    });
+    return;
+  }
+  if (serveStatic(url, res)) return;
+  res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
   res.end("adda-rummy realtime");
 });
 
-const wss = new WebSocketServer({ server: httpServer });
+const wss = new WebSocketServer({ noServer: true });
+
+httpServer.on("upgrade", (req, socket, head) => {
+  const path = req.url?.split("?")[0];
+  if (path !== "/ws") {
+    socket.destroy();
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+});
 
 wss.on("connection", (ws) => {
   const playerId = uid("p");
@@ -262,8 +352,7 @@ wss.on("connection", (ws) => {
         send(ws, { t: "error", message: "No hand in play." });
         return;
       }
-      const next = applyAction(room.game, playerId, msg.action);
-      room.game = next;
+      room.game = applyAction(room.game, playerId, msg.action);
       broadcast(room);
       armTimers(room);
       return;
@@ -281,5 +370,7 @@ wss.on("connection", (ws) => {
 });
 
 httpServer.listen(PORT, "0.0.0.0", () => {
+  const lan = lanOrigins(PORT);
   console.log(`Adda rummy realtime on :${PORT}`);
+  if (lan.length) console.log(`LAN: ${lan.join(", ")}`);
 });

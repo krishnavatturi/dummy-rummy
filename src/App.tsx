@@ -51,6 +51,7 @@ export default function App() {
   const [game, setGame] = useState<GameState | null>(null);
   const [howTo, setHowTo] = useState(false);
   const [joinCode, setJoinCode] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const youId = "you";
   const online = useOnline(profile.name.trim() || "Player");
 
@@ -88,11 +89,10 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const code = params.get("room");
+    const code = params.get("room")?.trim().toUpperCase();
     if (code) {
-      setJoinCode(code.toUpperCase());
-      setScreen("lobby");
-      online.join(code);
+      setInviteCode(code);
+      setJoinCode(code);
     }
   }, []);
 
@@ -105,8 +105,16 @@ export default function App() {
         <Landing
           name={profile.name}
           onName={(name) => updateProfile({ name })}
-          onPlay={() => setScreen("lobby")}
+          onPlay={() => {
+            if (inviteCode) {
+              online.join(inviteCode);
+              return;
+            }
+            setScreen("lobby");
+          }}
           onHowTo={() => setHowTo(true)}
+          inviteCode={inviteCode || undefined}
+          error={inviteCode ? online.error : null}
         />
       )}
       {screen === "lobby" && !inRoom && (

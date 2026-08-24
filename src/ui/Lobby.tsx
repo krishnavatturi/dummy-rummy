@@ -78,7 +78,7 @@ export function Lobby({
       <section className="lobby-section online-panel">
         <header>
           <h2>Online adda</h2>
-          <p>Create a table code and deal against a friend on the same server.</p>
+          <p>Create a table, copy the invite link, and send it. Friends only need a browser — no git.</p>
         </header>
         <div className="online-row">
           <label>
@@ -103,7 +103,7 @@ export function Lobby({
                 <span className="seats">{t.seats}P</span>
               </div>
               <h3>{t.name}</h3>
-              <p>Host a live table. Share the 4-letter code.</p>
+              <p>Host a live table. Share the invite link from the waiting room.</p>
               <button type="button" className="btn gold" onClick={() => onCreateOnline(t.id)}>
                 Create room
               </button>

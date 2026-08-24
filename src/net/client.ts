@@ -77,42 +77,45 @@ export function useOnline(name: string) {
     if (connected) send({ t: "hello", name });
   }, [name, connected, send]);
 
+  const whenOpen = useCallback(
+    (fn: () => void) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        fn();
+        return;
+      }
+      const t = window.setInterval(() => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          window.clearInterval(t);
+          fn();
+        }
+      }, 50);
+      window.setTimeout(() => window.clearInterval(t), 4000);
+    },
+    [],
+  );
+
   const create = useCallback(
     (tableId: string) => {
       setError(null);
       connect();
-      const trySend = () => send({ t: "create", tableId });
-      if (wsRef.current?.readyState === WebSocket.OPEN) trySend();
-      else {
-        const t = window.setInterval(() => {
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            window.clearInterval(t);
-            trySend();
-          }
-        }, 50);
-        window.setTimeout(() => window.clearInterval(t), 4000);
-      }
+      whenOpen(() => {
+        send({ t: "hello", name: nameRef.current });
+        send({ t: "create", tableId });
+      });
     },
-    [connect, send],
+    [connect, send, whenOpen],
   );
 
   const join = useCallback(
     (code: string) => {
       setError(null);
       connect();
-      const payload = { t: "join", code: code.trim().toUpperCase() };
-      if (wsRef.current?.readyState === WebSocket.OPEN) send(payload);
-      else {
-        const t = window.setInterval(() => {
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            window.clearInterval(t);
-            send(payload);
-          }
-        }, 50);
-        window.setTimeout(() => window.clearInterval(t), 4000);
-      }
+      whenOpen(() => {
+        send({ t: "hello", name: nameRef.current });
+        send({ t: "join", code: code.trim().toUpperCase() });
+      });
     },
-    [connect, send],
+    [connect, send, whenOpen],
   );
 
   const start = useCallback(
