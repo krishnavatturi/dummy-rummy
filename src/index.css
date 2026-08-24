@@ -313,6 +313,11 @@ button { cursor: pointer; }
   border: 0;
   color: inherit;
 }
+.stack-btn.hot .playing-card.back,
+.open-well.hot .playing-card {
+  box-shadow: 0 0 0 3px var(--gold), 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+.stack-btn:disabled { opacity: 0.85; cursor: default; }
 .stack-label, .joker-well span { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: #d9ffe8; }
 .stack { position: relative; width: 72px; height: 100px; }
 .stack .playing-card { position: absolute; inset: 0; }

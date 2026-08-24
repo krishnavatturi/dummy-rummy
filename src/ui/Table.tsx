@@ -230,18 +230,18 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
             <span>Wild {wild ?? ""}</span>
           </div>
           <CardBackStack count={game.closed.length} label="Closed" onClick={yourTurn && game.phase === "draw" ? onDrawClosed : undefined} />
-          <button
-            type="button"
-            className="open-well"
-            onClick={yourTurn && game.phase === "draw" ? onDrawOpen : undefined}
-          >
+          <div className={`open-well ${yourTurn && game.phase === "draw" ? "hot" : ""}`}>
             {open ? (
-              <CardView card={open} wildRank={wild} />
+              <CardView
+                card={open}
+                wildRank={wild}
+                onClick={yourTurn && game.phase === "draw" ? onDrawOpen : undefined}
+              />
             ) : (
               <span className="empty-open">Open</span>
             )}
             <span className="stack-label">Open</span>
-          </button>
+          </div>
         </div>
 
         <div className="turn-banner">
