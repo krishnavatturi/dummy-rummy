@@ -38,7 +38,7 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
   const [selected, setSelected] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmInvalid, setConfirmInvalid] = useState<string | null>(null);
-  const [seconds, setSeconds] = useState(20);
+  const [seconds, setSeconds] = useState(40);
   const gameRef = useRef(game);
   gameRef.current = game;
 
@@ -58,29 +58,44 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
 
   useEffect(() => {
     if (game.phase !== "draw" && game.phase !== "discard") return;
-    if (!turnSeat.isBot || turnSeat.status !== "active") return;
-    const wait = game.phase === "draw" ? 850 : 650;
-    const t = window.setTimeout(() => onChange(takeBotTurn(game)), wait);
+    const seat = game.seats[game.turn];
+    if (!seat?.isBot || seat.status !== "active") return;
+    const token = game.logSeq;
+    const wait = game.phase === "draw" ? 900 : 1100;
+    const t = window.setTimeout(() => {
+      const now = gameRef.current;
+      if (now.logSeq !== token) return;
+      const actor = currentSeat(now);
+      if (!actor.isBot || actor.status !== "active") return;
+      if (now.phase !== "draw" && now.phase !== "discard") return;
+      onChange(takeBotTurn(now));
+    }, wait);
     return () => window.clearTimeout(t);
-  }, [game, onChange, turnSeat.isBot, turnSeat.status]);
+  }, [game.phase, game.turn, game.logSeq, onChange]);
 
   useEffect(() => {
-    if (!yourTurn) return;
-    setSeconds(20);
-    const turnToken = game.logSeq;
-    const tick = window.setInterval(() => setSeconds((s) => s - 1), 1000);
+    if (!yourTurn) {
+      return;
+    }
+    const token = game.logSeq;
+    const started = Date.now();
+    const limit = 40;
+    setSeconds(limit);
+    const tick = window.setInterval(() => {
+      setSeconds(Math.max(0, limit - Math.floor((Date.now() - started) / 1000)));
+    }, 250);
     const auto = window.setTimeout(() => {
-      const current = gameRef.current;
-      if (current.logSeq !== turnToken) return;
-      const seat = currentSeat(current);
-      if (seat.id !== youId) return;
-      if (current.phase === "draw") onChange(drawClosed(current, youId));
-      else if (current.phase === "discard") {
-        const cards = getSeatCards(current, youId);
-        const id = current.drawnCardId ?? cards[cards.length - 1]?.id;
-        if (id) onChange(discard(current, youId, id));
+      const now = gameRef.current;
+      if (now.logSeq !== token) return;
+      const actor = currentSeat(now);
+      if (actor.id !== youId) return;
+      if (now.phase === "draw") onChange(drawClosed(now, youId));
+      else if (now.phase === "discard") {
+        const cards = getSeatCards(now, youId);
+        const id = now.drawnCardId ?? cards[cards.length - 1]?.id;
+        if (id) onChange(discard(now, youId, id));
       }
-    }, 20000);
+    }, limit * 1000);
     return () => {
       window.clearInterval(tick);
       window.clearTimeout(auto);
@@ -233,6 +248,7 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
           <div className={`open-well ${yourTurn && game.phase === "draw" ? "hot" : ""}`}>
             {open ? (
               <CardView
+                key={open.id}
                 card={open}
                 wildRank={wild}
                 onClick={yourTurn && game.phase === "draw" ? onDrawOpen : undefined}

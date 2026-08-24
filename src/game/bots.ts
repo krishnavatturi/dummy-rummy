@@ -70,7 +70,7 @@ export function botShouldDrop(state: GameState): boolean {
   // First-turn drop if the hand is a wreck and we sit at a points table.
   if (state.table.variant === "points" && !seat.hasDrawnThisHand && a.score >= 70 && a.pureCount === 0) {
     const rng = createRng(state.seed + state.handNumber * 31 + state.turn + state.logSeq);
-    return rng.next() < 0.12;
+    return rng.next() < 0.04;
   }
   return false;
 }
