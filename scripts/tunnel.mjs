@@ -21,7 +21,11 @@ function extractUrl(text) {
 
 function run(command, args) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: process.platform === "win32",
+      windowsHide: true,
+    });
     let found = false;
     const onData = (buf) => {
       const s = buf.toString();
@@ -51,7 +55,8 @@ async function main() {
   } catch (err) {
     console.error("cloudflared not available, trying npx localtunnel…");
   }
-  await run("npx", ["--yes", "localtunnel", "--port", String(port)]);
+  const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+  await run(npx, ["--yes", "localtunnel", "--port", String(port)]);
 }
 
 main().catch((err) => {

@@ -9,7 +9,7 @@
     "start": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "share": "npm run build && concurrently -k -n game,tunnel -c cyan,magenta \"PORT=4173 tsx server/index.ts\" \"node scripts/tunnel.mjs 4173\"",
+    "share": "npm run build && node scripts/share.mjs",
     "share:dev": "concurrently -k -n stack,tunnel -c cyan,magenta \"npm run dev\" \"node scripts/tunnel.mjs 5173\"",
     "test": "vitest run"
   },

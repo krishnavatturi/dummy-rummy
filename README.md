@@ -27,7 +27,9 @@ npm install
 npm run share
 ```
 
-That builds the app, serves UI + realtime on one port, and opens a public tunnel. The waiting room then shows a **Copy link** button (`/?room=CODE`). Send that URL. Friends enter a name and sit.
+That builds the app, serves UI + realtime on one port, and opens a public tunnel. Works on Windows and macOS/Linux. The waiting room then shows a **Copy link** button (`/?room=CODE`). Send that URL. Friends enter a name and sit.
+
+Online play (including `npm run share`) is on branch `cursor/online-multiplayer-a1c0` until PR #2 is merged into `main`.
 
 Same Wi-Fi without a tunnel: `npm run dev` (or `npm start` after a build) and copy the LAN link from the waiting room.
 
