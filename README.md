@@ -46,6 +46,28 @@ Same Wi-Fi without a tunnel: `npm run dev` (or `npm start` after a build) and co
 
 Set `PUBLIC_URL` if you already have a public origin (skip the tunnel). Practice chips only.
 
+## Host online (HTTPS, for friends)
+
+Do **not** expose your home PC. `npm run share` / localtunnel is a quick demo, not a secure host. Put the app on a small HTTPS host so friends get `https://…` and `wss://…`.
+
+### Fly.io (recommended)
+
+1. Install the [Fly CLI](https://fly.io/docs/flyctl/install/) and sign in: `fly auth login`
+2. From this repo (branch `cursor/online-multiplayer-a1c0` until it is merged):
+
+```bash
+git pull
+fly launch --yes --copy-config=false --name adda-rummy-friends
+fly deploy
+```
+
+3. Open the `https://….fly.dev` URL Fly prints. Create a room, **Copy link**, send that to friends.
+4. Keep a machine running while you play (`fly scale count 1`) so the table does not sleep mid-hand.
+
+Railway works the same way: new project → deploy this repo → it picks up the `Dockerfile`. Set `PUBLIC_URL=https://your-app.up.railway.app` if invite links still show an internal host.
+
+The container serves the UI and WebSocket on one port (`PORT`, default 8080). The platform terminates TLS. Room codes are the only gate — do not post the site publicly.
+
 ## Rules in this build
 
 - Two packs + printed jokers, 13 cards each

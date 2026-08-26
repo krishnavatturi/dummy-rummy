@@ -1,0 +1,7 @@
+node_modules
+dist
+.git
+.share-url
+*.local
+.vite
+tsconfig.tsbuildinfo

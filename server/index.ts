@@ -86,6 +86,10 @@ function lanOrigins(port: number): string[] {
 
 function publicOrigin(): string | null {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/$/, "");
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    return `https://${process.env.RAILWAY_PUBLIC_DOMAIN.replace(/\/$/, "")}`;
+  }
+  if (process.env.FLY_APP_NAME) return `https://${process.env.FLY_APP_NAME}.fly.dev`;
   try {
     const raw = readFileSync(SHARE_FILE, "utf8").trim();
     return raw ? raw.replace(/\/$/, "") : null;
