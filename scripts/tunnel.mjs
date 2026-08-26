@@ -19,13 +19,20 @@ function extractUrl(text) {
   return any?.[0] ?? null;
 }
 
+function quoteWin(arg) {
+  return `"${String(arg).replace(/"/g, '\\"')}"`;
+}
+
 function run(command, args) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      stdio: ["ignore", "pipe", "pipe"],
-      shell: process.platform === "win32",
-      windowsHide: true,
-    });
+    const opts = { stdio: ["ignore", "pipe", "pipe"], windowsHide: true, shell: false };
+    const child =
+      process.platform === "win32"
+        ? spawn("cmd.exe", ["/d", "/s", "/c", [command, ...args].map(quoteWin).join(" ")], {
+            ...opts,
+            windowsVerbatimArguments: true,
+          })
+        : spawn(command, args, opts);
     let found = false;
     const onData = (buf) => {
       const s = buf.toString();
@@ -52,7 +59,7 @@ async function main() {
   try {
     await run("cloudflared", ["tunnel", "--no-autoupdate", "--url", `http://127.0.0.1:${port}`]);
     return;
-  } catch (err) {
+  } catch {
     console.error("cloudflared not available, trying npx localtunnel…");
   }
   const npx = process.platform === "win32" ? "npx.cmd" : "npx";
