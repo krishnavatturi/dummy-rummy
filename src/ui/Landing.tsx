@@ -3,9 +3,12 @@ type Props = {
   onName: (v: string) => void;
   onPlay: () => void;
   onHowTo: () => void;
+  inviteCode?: string;
+  error?: string | null;
 };
 
-export function Landing({ name, onName, onPlay, onHowTo }: Props) {
+export function Landing({ name, onName, onPlay, onHowTo, inviteCode, error }: Props) {
+  const joining = Boolean(inviteCode);
   return (
     <div className="landing">
       <div className="landing-glow" />
@@ -24,6 +27,11 @@ export function Landing({ name, onName, onPlay, onHowTo }: Props) {
         <p className="tagline">
           Indian rummy adda — practice chips, real sequences, no cash tables.
         </p>
+        {joining && (
+          <p className="invite-banner">
+            You’re invited to table <b>{inviteCode}</b>. Enter a name, then sit. No git needed.
+          </p>
+        )}
         <form
           className="join-form"
           onSubmit={(e) => {
@@ -41,9 +49,10 @@ export function Landing({ name, onName, onPlay, onHowTo }: Props) {
             />
           </label>
           <button type="submit" className="btn gold xl">
-            Play now
+            {joining ? `Join table ${inviteCode}` : "Play now"}
           </button>
         </form>
+        {error && <p className="error-line">{error}</p>}
         <ul className="pill-row">
           <li>2–6 players</li>
           <li>Wild + printed jokers</li>

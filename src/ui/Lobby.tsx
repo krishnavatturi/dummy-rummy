@@ -4,12 +4,28 @@ import type { TableConfig } from "../game/types";
 type Props = {
   name: string;
   chips: number;
+  joinCode: string;
+  onJoinCode: (v: string) => void;
   onSit: (table: TableConfig) => void;
+  onCreateOnline: (tableId: string) => void;
+  onJoinOnline: () => void;
+  onlineError: string | null;
   onHowTo: () => void;
   onLeave: () => void;
 };
 
-export function Lobby({ name, chips, onSit, onHowTo, onLeave }: Props) {
+export function Lobby({
+  name,
+  chips,
+  joinCode,
+  onJoinCode,
+  onSit,
+  onCreateOnline,
+  onJoinOnline,
+  onlineError,
+  onHowTo,
+  onLeave,
+}: Props) {
   const groups = [
     { key: "points", title: "Points Rummy", copy: "Fast hands. Winner collects points × value." },
     { key: "pool", title: "Pool Rummy", copy: "Stay under 101 or 201. Last player takes the pot." },
@@ -48,13 +64,51 @@ export function Lobby({ name, chips, onSit, onHowTo, onLeave }: Props) {
           <h1>Pick a table. Bots fill the seats.</h1>
           <p className="lede">
             Points for a quick hand, pool if you want a longer session, deals when you
-            like a fixed number of shows. Same 13-card rules throughout.
+            like a fixed number of shows. Same 13-card rules throughout. Open a second
+            browser for a live opponent, or sit vs bots.
           </p>
         </div>
         <div className="hero-stat">
           <span>Welcome bonus</span>
           <strong>1,00,000</strong>
           <em>practice chips · never cash</em>
+        </div>
+      </section>
+
+      <section className="lobby-section online-panel">
+        <header>
+          <h2>Online adda</h2>
+          <p>Create a table, copy the invite link, and send it. Friends only need a browser — no git.</p>
+        </header>
+        <div className="online-row">
+          <label>
+            Join code
+            <input
+              value={joinCode}
+              maxLength={6}
+              placeholder="ABCD"
+              onChange={(e) => onJoinCode(e.target.value.toUpperCase())}
+            />
+          </label>
+          <button type="button" className="btn gold" disabled={joinCode.trim().length < 4} onClick={onJoinOnline}>
+            Join table
+          </button>
+        </div>
+        {onlineError && <p className="error-line">{onlineError}</p>}
+        <div className="table-grid">
+          {LOBBY_TABLES.filter((t) => t.seats === 2).slice(0, 3).map((t) => (
+            <article key={`on-${t.id}`} className="table-card">
+              <div className="table-card-top">
+                <span className="badge">Online · {variantLabel(t.variant)}</span>
+                <span className="seats">{t.seats}P</span>
+              </div>
+              <h3>{t.name}</h3>
+              <p>Host a live table. Share the invite link from the waiting room.</p>
+              <button type="button" className="btn gold" onClick={() => onCreateOnline(t.id)}>
+                Create room
+              </button>
+            </article>
+          ))}
         </div>
       </section>
 

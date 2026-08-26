@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { GameAction } from "../game/actions";
 import { takeBotTurn } from "../game/bots";
 import { isJoker } from "../game/cards";
 import {
@@ -32,17 +33,19 @@ type Props = {
   onCashout: (delta: number) => void;
   onLeave: () => void;
   onHowTo: () => void;
+  dispatch?: (action: GameAction) => void;
 };
 
-export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowTo }: Props) {
+export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowTo, dispatch }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmInvalid, setConfirmInvalid] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(40);
   const gameRef = useRef(game);
   gameRef.current = game;
+  const online = Boolean(dispatch);
 
-  const you = game.seats.find((s) => s.id === youId)!;
+  const you = game.seats.find((s) => s.id === youId) ?? game.seats[0]!;
   const turnSeat = currentSeat(game);
   const yourTurn = turnSeat.id === youId && (game.phase === "draw" || game.phase === "discard");
   const handCount = you.groups.reduce((n, g) => n + g.length, 0);
@@ -52,11 +55,17 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
   const youCards = useMemo(() => getSeatCards(game, youId), [game, youId]);
   const analysis = useMemo(() => analyzeHand(youCards, wild), [youCards, wild]);
 
+  function commit(action: GameAction, local: () => GameState) {
+    if (dispatch) dispatch(action);
+    else onChange(local());
+  }
+
   useEffect(() => {
     setSelected([]);
   }, [game.logSeq, game.phase, game.turn]);
 
   useEffect(() => {
+    if (online) return;
     if (game.phase !== "draw" && game.phase !== "discard") return;
     const seat = game.seats[game.turn];
     if (!seat?.isBot || seat.status !== "active") return;
@@ -71,7 +80,7 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
       onChange(takeBotTurn(now));
     }, wait);
     return () => window.clearTimeout(t);
-  }, [game.phase, game.turn, game.logSeq, onChange]);
+  }, [game.phase, game.turn, game.logSeq, onChange, online]);
 
   useEffect(() => {
     if (!yourTurn) {
@@ -85,6 +94,7 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
       setSeconds(Math.max(0, limit - Math.floor((Date.now() - started) / 1000)));
     }, 250);
     const auto = window.setTimeout(() => {
+      if (online) return;
       const now = gameRef.current;
       if (now.logSeq !== token) return;
       const actor = currentSeat(now);
@@ -100,7 +110,7 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
       window.clearInterval(tick);
       window.clearTimeout(auto);
     };
-  }, [yourTurn, game.logSeq, onChange, youId]);
+  }, [yourTurn, game.logSeq, onChange, youId, online]);
 
   function flash(text: string) {
     setToast(text);
@@ -113,24 +123,24 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
 
   function onDrawClosed() {
     if (!yourTurn || game.phase !== "draw") return flash("Wait for your draw.");
-    onChange(drawClosed(game, youId));
+    commit({ type: "drawClosed" }, () => drawClosed(game, youId));
   }
 
   function onDrawOpen() {
     if (!yourTurn || game.phase !== "draw") return flash("Wait for your draw.");
     if (!open) return;
-    onChange(drawOpen(game, youId));
+    commit({ type: "drawOpen" }, () => drawOpen(game, youId));
   }
 
   function onDiscard() {
     if (!yourTurn || game.phase !== "discard") return flash("Pick a card first.");
     if (selected.length !== 1) return flash("Select exactly one card to discard.");
-    onChange(discard(game, youId, selected[0]!));
+    commit({ type: "discard", cardId: selected[0]! }, () => discard(game, youId, selected[0]!));
   }
 
   function onDrop() {
     if (!yourTurn || game.phase !== "draw") return flash("Drop before you pick.");
-    onChange(drop(game, youId));
+    commit({ type: "drop" }, () => drop(game, youId));
   }
 
   function tryFinish() {
@@ -145,7 +155,7 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
     const restCards = grouped.flat();
     const auto = analyzeHand(restCards, wild);
     if (groupedEval.validDeclare || auto.canDeclare) {
-      onChange(declare(game, youId, discardId));
+      commit({ type: "declare", cardId: discardId }, () => declare(game, youId, discardId));
       return;
     }
     setConfirmInvalid(discardId);
@@ -166,13 +176,13 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
       return;
     }
     onCashout(delta - fee);
-    onChange(rematch(game));
+    commit({ type: "rematch" }, () => rematch(game));
   }
 
   function settleAndNext() {
     const delta = game.seats.find((s) => s.id === youId)?.chipsDelta ?? 0;
     onCashout(delta);
-    onChange(nextHand(game));
+    commit({ type: "nextHand" }, () => nextHand(game));
   }
 
   const others = game.seats.filter((s) => s.id !== youId);
@@ -304,14 +314,14 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
                     wildRank={wild}
                     selected={selected.includes(card.id)}
                     onClick={() => toggle(card.id)}
-                    onDoubleClick={() => onChange(splitGroup(game, youId, gi))}
+                    onDoubleClick={() => commit({ type: "splitGroup", groupIndex: gi }, () => splitGroup(game, youId, gi))}
                   />
                 ))}
                 {group.length > 1 && (
                   <button
                     type="button"
                     className="split"
-                    onClick={() => onChange(splitGroup(game, youId, gi))}
+                    onClick={() => commit({ type: "splitGroup", groupIndex: gi }, () => splitGroup(game, youId, gi))}
                   >
                     Split{jokers ? ` · ${jokers}J` : ""}
                   </button>
@@ -321,17 +331,17 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
           })}
         </div>
         <div className="actions">
-          <button type="button" className="btn ghost" onClick={() => onChange(sortHand(game, youId))}>
+          <button type="button" className="btn ghost" onClick={() => commit({ type: "sortHand" }, () => sortHand(game, youId))}>
             Sort
           </button>
-          <button type="button" className="btn ghost" onClick={() => onChange(autoArrange(game, youId))}>
+          <button type="button" className="btn ghost" onClick={() => commit({ type: "autoArrange" }, () => autoArrange(game, youId))}>
             Arrange
           </button>
           <button
             type="button"
             className="btn ghost"
             disabled={selected.length < 2}
-            onClick={() => onChange(groupSelected(game, youId, selected))}
+            onClick={() => commit({ type: "groupSelected", cardIds: selected }, () => groupSelected(game, youId, selected))}
           >
             Group
           </button>
@@ -339,7 +349,11 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
             type="button"
             className="btn ghost"
             disabled={selected.length !== 1}
-            onClick={() => onChange(moveCard(game, youId, selected[0]!, "new"))}
+            onClick={() =>
+              commit({ type: "moveCard", cardId: selected[0]!, toGroupIndex: "new" }, () =>
+                moveCard(game, youId, selected[0]!, "new"),
+              )
+            }
           >
             Ungroup
           </button>
@@ -395,7 +409,7 @@ export function Table({ game, youId, chips, onChange, onCashout, onLeave, onHowT
                 type="button"
                 className="btn warn"
                 onClick={() => {
-                  onChange(declare(game, youId, confirmInvalid));
+                  commit({ type: "declare", cardId: confirmInvalid }, () => declare(game, youId, confirmInvalid));
                   setConfirmInvalid(null);
                 }}
               >

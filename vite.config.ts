@@ -7,6 +7,16 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
+    allowedHosts: true,
+    proxy: {
+      "/ws": {
+        target: "ws://127.0.0.1:8787",
+        ws: true,
+      },
+      "/api": {
+        target: "http://127.0.0.1:8787",
+      },
+    },
   },
   preview: {
     host: true,

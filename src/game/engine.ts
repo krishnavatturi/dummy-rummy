@@ -508,3 +508,13 @@ export function lookupCard(state: GameState, id: string): Card | undefined {
 export function openTop(state: GameState): Card | undefined {
   return state.open[state.open.length - 1];
 }
+
+export function attachCards(state: GameState, cards: Card[]): GameState {
+  const s = state as Internal;
+  const map = new Map<string, Card>();
+  for (const c of cards) map.set(c.id, c);
+  for (const c of s.open) map.set(c.id, c);
+  if (s.wildCard) map.set(s.wildCard.id, s.wildCard);
+  s._cards = map;
+  return s;
+}

@@ -528,6 +528,91 @@ button { cursor: pointer; }
   z-index: 30;
 }
 
+.online-panel .online-row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: end;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.online-row label { display: grid; gap: 0.35rem; color: var(--muted); font-size: 0.85rem; }
+.online-row input {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(228, 195, 106, 0.35);
+  color: var(--cream);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  width: 8rem;
+}
+.error-line { color: #ffb4b4; }
+.room-hero { padding: 1rem 1.5rem 0.5rem; text-align: center; }
+.room-code {
+  display: inline-grid;
+  margin: 0.8rem auto 0.4rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 16px;
+  border: 1px solid rgba(228, 195, 106, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--gold-2);
+  font-family: "Cinzel", serif;
+  font-size: 2.2rem;
+  letter-spacing: 0.28em;
+}
+.room-code span {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.invite-box {
+  max-width: 520px;
+  margin: 1rem auto 0;
+  text-align: left;
+  display: grid;
+  gap: 0.55rem;
+}
+.invite-box label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.invite-box input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(228, 195, 106, 0.35);
+  color: var(--cream);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.88rem;
+}
+.invite-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.invite-hint { margin: 0; color: var(--muted); font-size: 0.88rem; line-height: 1.45; }
+.invite-banner {
+  display: inline-block;
+  margin: 0.4rem 0 0;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(228, 195, 106, 0.4);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--gold-2);
+}
+.invite-banner b { letter-spacing: 0.14em; }
+.seat-list { list-style: none; padding: 0; display: grid; gap: 0.5rem; max-width: 420px; }
+.seat-list li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(228, 195, 106, 0.18);
+  border-radius: 12px;
+  padding: 0.45rem 0.7rem;
+}
+.seat-list li.empty { opacity: 0.55; }
+.seat-list em { color: var(--gold); font-style: normal; font-size: 0.75rem; }
+
 @media (max-width: 800px) {
   .lobby-hero { grid-template-columns: 1fr; }
   .log { display: none; }
