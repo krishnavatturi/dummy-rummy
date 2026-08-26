@@ -1,8 +1,12 @@
 import { spawn } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const port = process.argv[2] || process.env.PORT || "4173";
-const shareFile = new URL("../.share-url", import.meta.url);
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const shareFile = join(ROOT, ".share-url");
+const ltBin = join(ROOT, "node_modules", "localtunnel", "bin", "lt.js");
 
 function save(url) {
   const clean = String(url).trim().replace(/\/$/, "");
@@ -19,20 +23,13 @@ function extractUrl(text) {
   return any?.[0] ?? null;
 }
 
-function quoteWin(arg) {
-  return `"${String(arg).replace(/"/g, '\\"')}"`;
-}
-
 function run(command, args) {
   return new Promise((resolve, reject) => {
-    const opts = { stdio: ["ignore", "pipe", "pipe"], windowsHide: true, shell: false };
-    const child =
-      process.platform === "win32"
-        ? spawn("cmd.exe", ["/d", "/s", "/c", [command, ...args].map(quoteWin).join(" ")], {
-            ...opts,
-            windowsVerbatimArguments: true,
-          })
-        : spawn(command, args, opts);
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+      shell: false,
+    });
     let found = false;
     const onData = (buf) => {
       const s = buf.toString();
@@ -60,10 +57,18 @@ async function main() {
     await run("cloudflared", ["tunnel", "--no-autoupdate", "--url", `http://127.0.0.1:${port}`]);
     return;
   } catch {
-    console.error("cloudflared not available, trying npx localtunnel…");
+    console.error("cloudflared not available, trying localtunnel…");
   }
-  const npx = process.platform === "win32" ? "npx.cmd" : "npx";
-  await run(npx, ["--yes", "localtunnel", "--port", String(port)]);
+  if (existsSync(ltBin)) {
+    await run(process.execPath, [ltBin, "--port", String(port)]);
+    return;
+  }
+  const npmCli = process.env.npm_execpath;
+  if (npmCli) {
+    await run(process.execPath, [npmCli, "exec", "--yes", "--", "localtunnel", "--port", String(port)]);
+    return;
+  }
+  throw new Error("localtunnel is not installed (npm install) and npm_execpath is missing");
 }
 
 main().catch((err) => {

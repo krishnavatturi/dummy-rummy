@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { networkInterfaces } from "node:os";
-import { extname, join, normalize } from "node:path";
+import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer, WebSocket } from "ws";
 import { BOT_NAMES, LOBBY_TABLES } from "../src/game/lobby";
@@ -10,6 +10,7 @@ import { takeBotTurn } from "../src/game/bots";
 import { createMatch, currentSeat, discard, drawClosed, getSeatCards } from "../src/game/engine";
 import { viewFor } from "../src/game/net";
 import { advertisedPort, requestHost } from "../src/net/invite";
+import { resolvePublicFile } from "../src/net/staticPath";
 import type { GameState, TableConfig, TableSeat } from "../src/game/types";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -203,20 +204,16 @@ function sendJson(res: import("node:http").ServerResponse, status: number, body:
 
 function serveStatic(reqPath: string, res: import("node:http").ServerResponse): boolean {
   if (!existsSync(DIST)) return false;
-  const raw = decodeURIComponent((reqPath.split("?")[0] || "/")).replace(/\\/g, "/");
-  const rel = raw === "/" ? "/index.html" : raw;
-  const full = normalize(join(DIST, rel));
-  const distRoot = DIST.endsWith("/") ? DIST : `${DIST}/`;
-  if (full !== DIST && !full.startsWith(distRoot)) {
+  let file = resolvePublicFile(DIST, reqPath);
+  if (!file) {
     res.writeHead(403);
     res.end("forbidden");
     return true;
   }
-  let file = full;
   if (!existsSync(file) || statSync(file).isDirectory()) {
-    file = join(DIST, "index.html");
+    file = resolvePublicFile(DIST, "/index.html");
   }
-  if (!existsSync(file)) return false;
+  if (!file || !existsSync(file)) return false;
   res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream" });
   createReadStream(file).pipe(res);
   return true;
