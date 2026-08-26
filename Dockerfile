@@ -17,4 +17,4 @@ COPY tsconfig.json ./
 ENV PORT=8080
 EXPOSE 8080
 USER node
-CMD ["npx", "--no-install", "tsx", "server/index.ts"]
+CMD ["node", "node_modules/tsx/dist/cli.mjs", "server/index.ts"]
